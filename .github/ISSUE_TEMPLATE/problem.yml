@@ -1,0 +1,40 @@
+name: Report a problem
+description: Something in the FDOT Civil 3D tools looks wrong, crashed, or gave a value you don't agree with.
+title: "[Problem] "
+labels: ["tester report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing. Please don't attach client or project data you aren't allowed to share — a small made-up example that shows the problem is ideal.
+  - type: input
+    id: build
+    attributes:
+      label: Build
+      description: Shown at the bottom of every page (version · commit). Filled in automatically when you use the "Report a problem" link.
+    validations:
+      required: true
+  - type: input
+    id: tool
+    attributes:
+      label: Tool / tab
+      placeholder: e.g. DXF → Code File, Legal Description QC
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: If a computed value is wrong, give the value you got and the value you expected (and how you computed it).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open …  2. Load …  3. Click …"
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: e.g. Chrome 130 on Windows 11

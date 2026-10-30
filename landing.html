@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoundaryQC — FDOT Civil 3D CADD Standards QC, in your browser</title>
+    <meta name="description" content="Audit DXF drawings against FDOT CADD layer standards, check traverse and legal-description closure, and build Civil 3D linework — entirely in your browser. Drawings are never uploaded.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none';">
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+    <!-- Font Awesome Free 6.5.1 (solid + brands), self-hosted — see vendor/fontawesome -->
+    <link rel="stylesheet" href="vendor/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/solid.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/brands.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Landing-page-only layout. Colours/radii/shadows all come from style.css tokens
+           so this page and the app stay visually identical. */
+        body.lp { margin: 0; background: var(--bg-base); color: var(--text-primary); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .lp-wrap { max-width: 1140px; margin: 0 auto; padding: 0 1.25rem; }
+        .lp-nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+                  padding: 1rem 0; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; }
+        .lp-brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; }
+        .lp-brand i { color: var(--primary); }
+        .lp-nav-links { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; font-size: 0.9rem; }
+        .lp-nav-links a { color: var(--text-secondary); text-decoration: none; }
+        .lp-nav-links a:hover { color: var(--text-primary); }
+
+        .lp-hero { padding: 4rem 0 3rem; }
+        .lp-eyebrow { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.78rem; font-weight: 700;
+                      letter-spacing: 0.04em; text-transform: uppercase; color: var(--primary);
+                      background: var(--primary-light); border: 1px solid var(--border-accent);
+                      padding: 0.3rem 0.7rem; border-radius: 999px; }
+        .lp-hero h1 { font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.08; letter-spacing: -0.025em;
+                      margin: 1.1rem 0 0.9rem; max-width: 20ch; }
+        .lp-lede { font-size: clamp(1rem, 2vw, 1.18rem); line-height: 1.6; color: var(--text-secondary); max-width: 62ch; margin: 0 0 1.75rem; }
+        .lp-cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+        .lp-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.3rem;
+                  border-radius: var(--radius-sm); font-weight: 650; font-size: 0.95rem; text-decoration: none;
+                  border: 1px solid transparent; cursor: pointer; }
+        .lp-btn-primary { background: var(--primary); color: #fff; }
+        .lp-btn-primary:hover { background: var(--primary-hover); }
+        .lp-btn-ghost { background: transparent; color: var(--text-primary); border-color: var(--glass-border); }
+        .lp-btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+        .lp-hero-note { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.9rem; }
+
+        .lp-section { padding: 3.25rem 0; border-top: 1px solid var(--glass-border); }
+        .lp-section h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); letter-spacing: -0.02em; margin: 0 0 0.6rem; }
+        .lp-section-lede { color: var(--text-secondary); max-width: 68ch; margin: 0 0 2rem; line-height: 1.6; }
+
+        .lp-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); }
+        .lp-card { background: var(--bg-surface); border: 1px solid var(--glass-border);
+                   border-radius: var(--radius-md); padding: 1.25rem; }
+        .lp-card h3 { font-size: 1rem; margin: 0.7rem 0 0.4rem; }
+        .lp-card p { font-size: 0.88rem; line-height: 1.55; color: var(--text-secondary); margin: 0; }
+        .lp-card i { font-size: 1.15rem; color: var(--primary); }
+
+        .lp-who { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+        .lp-who-item { border-left: 3px solid var(--accent); padding: 0.15rem 0 0.15rem 1rem; }
+        .lp-who-item strong { display: block; font-size: 0.95rem; margin-bottom: 0.3rem; }
+        .lp-who-item span { font-size: 0.87rem; color: var(--text-secondary); line-height: 1.55; }
+
+        .lp-price-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); align-items: start; }
+        .lp-price { background: var(--bg-surface); border: 1px solid var(--glass-border);
+                    border-radius: var(--radius-md); padding: 1.4rem; display: flex; flex-direction: column; height: 100%; }
+        .lp-price.featured { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+        .lp-price-name { font-weight: 750; font-size: 1.05rem; }
+        .lp-price-tag { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0.55rem 0 0.1rem; }
+        .lp-price-tag span { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0; }
+        .lp-price-for { font-size: 0.82rem; color: var(--text-muted); min-height: 2.6em; line-height: 1.4; }
+        .lp-price ul { list-style: none; padding: 0; margin: 1rem 0 1.25rem; font-size: 0.86rem; line-height: 1.5; }
+        .lp-price li { display: flex; gap: 0.5rem; padding: 0.3rem 0; color: var(--text-secondary); }
+        .lp-price li i { color: var(--success); font-size: 0.8rem; margin-top: 0.25rem; }
+        .lp-price li.off { color: var(--text-muted); }
+        .lp-price li.off i { color: var(--text-muted); }
+        .lp-price .lp-btn { width: 100%; justify-content: center; margin-top: auto; }
+        .lp-badge-featured { font-size: 0.68rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em;
+                             color: var(--primary); background: var(--primary-light); padding: 0.2rem 0.5rem;
+                             border-radius: 999px; margin-left: 0.45rem; }
+
+        .lp-honest { background: var(--bg-surface); border: 1px solid var(--glass-border);
+                     border-left: 3px solid var(--warning); border-radius: var(--radius-md); padding: 1.4rem; }
+        .lp-honest h3 { margin: 0 0 0.7rem; font-size: 1rem; }
+        .lp-honest ul { margin: 0; padding-left: 1.2rem; font-size: 0.88rem; line-height: 1.65; color: var(--text-secondary); }
+        .lp-honest li { margin-bottom: 0.45rem; }
+
+        .lp-foot { padding: 2.25rem 0 3rem; border-top: 1px solid var(--glass-border);
+                   font-size: 0.83rem; color: var(--text-muted); line-height: 1.6; }
+        .lp-foot a { color: var(--text-secondary); }
+
+        @media (max-width: 640px) {
+            .lp-hero { padding: 2.5rem 0 2rem; }
+            .lp-section { padding: 2.5rem 0; }
+        }
+    </style>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="lp dark-theme">
+
+<div class="lp-wrap">
+    <nav class="lp-nav">
+        <div class="lp-brand"><i class="fa-solid fa-drafting-compass"></i> BoundaryQC</div>
+        <div class="lp-nav-links">
+            <a href="home.html">Home</a>
+            <a href="#what">What it does</a>
+            <a href="#who">Who it's for</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#limits">Limitations</a>
+            <a class="lp-btn lp-btn-ghost" style="padding:0.5rem 0.9rem;" href="index.html">Open the app</a>
+        </div>
+    </nav>
+</div>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<div class="lp-wrap">
+    <header class="lp-hero">
+        <span class="lp-eyebrow"><i class="fa-solid fa-lock"></i> Drawings never leave your browser</span>
+        <h1>FDOT CADD standards QC that runs in the browser.</h1>
+        <p class="lp-lede">
+            Drop in a DXF and get a CADD-standards scorecard, bow-tie and closure detection, an
+            auto-fix script, and a Map Check report — plus COGO, legal-description QC, PLSS
+            breakdown, linework editing and LandXML tools. No install, no plugin, no upload:
+            every drawing is parsed and audited in the page, and the app's own Content Security
+            Policy (<code>connect-src 'self'</code>) blocks it from sending your file anywhere.
+        </p>
+        <div class="lp-cta-row">
+            <a class="lp-btn lp-btn-primary" href="index.html"><i class="fa-solid fa-play"></i> Use it free — no signup</a>
+            <a class="lp-btn lp-btn-ghost" href="#pricing"><i class="fa-solid fa-tag"></i> See pricing</a>
+        </div>
+        <p class="lp-hero-note">
+            The free tier is the real app, not a video. Open it, drag a drawing in, and see the
+            findings before you decide anything.
+        </p>
+    </header>
+</div>
+
+<!-- ── What it does ─────────────────────────────────────────────────────── -->
+<div class="lp-wrap">
+    <section class="lp-section" id="what">
+        <h2>What it actually does</h2>
+        <p class="lp-section-lede">
+            Sixteen tools, each doing real geometry and parsing work on your file. Everything below
+            ships today — nothing here is a roadmap item.
+        </p>
+        <div class="lp-grid">
+            <div class="lp-card">
+                <i class="fa-solid fa-layer-group"></i>
+                <h3>Standards compare &amp; auto-correct</h3>
+                <p>Check a DXF against the built-in FDOT 2026 layer standard, your own JSON standard, or a
+                   master-template DXF (its LAYER/LTYPE/STYLE tables and BLOCKS). Tolerance geometry diff
+                   against a reference drawing with a pan/zoom overlay, then export a corrected <code>.dxf</code>.</p>
+            </div>
+            <div class="lp-card">
+                <i class="fa-solid fa-magnifying-glass-chart"></i>
+                <h3>DXF project auditor</h3>
+                <p>Scores CADD-standards compliance and flags real geometry faults — bow-tie
+                   self-intersections, zero-length entities, coordinates outside the state-plane
+                   envelope — then exports an AutoCAD auto-fix <code>.scr</code>.</p>
+            </div>
+            <div class="lp-card">
+                <i class="fa-solid fa-compass-drafting"></i>
+                <h3>Traverse &amp; legal-description QC</h3>
+                <p>Latitude/departure closure, precision ratio, Shoelace area and bow-tie detection, with a
+                   Map Check report. Parses metes-and-bounds text, chord-traces the boundary, and exports
+                   PNEZD points.</p>
+            </div>
+            <div class="lp-card">
+                <i class="fa-solid fa-bezier-curve"></i>
+                <h3>Linework editor &amp; field book</h3>
+                <p>Import a P,N,E,Z,D point file or bearing/distance calls, run the field-data checks, and
+                   edit vertices and courses on an SVG canvas. FDOT EFB point/reference naming, P/C curve
+                   geometry and the chain-list language included.</p>
+            </div>
+            <div class="lp-card">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <h3>Florida State Plane &amp; scale factors</h3>
+                <p>SPCS83 East/West/North projections both directions, grid scale factor, elevation
+                   factor, combined scale factor, and ground-to-grid distance reduction.</p>
+            </div>
+            <div class="lp-card">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <h3>Batch auditing &amp; reports</h3>
+                <p>Audit a whole submittal package of DXF and LandXML files at once into a compliance
+                   matrix, a consolidated fix script, and a master scorecard. Every report across the
+                   suite collects in one hub with HTML/Markdown export.</p>
+            </div>
+            <div class="lp-card">
+                <i class="fa-solid fa-faucet-drip"></i>
+                <h3>JEA As-Built 2024 standards</h3>
+                <p>Civil 3D drawing builder and reverse-read auditor for JEA utility as-builts: 45 picklist
+                   domains, layer and block schema checks, and the 18-inch pipe-crossing vertical
+                   clearance rule.</p>
+            </div>
+            <div class="lp-card">
+                <i class="fa-solid fa-database"></i>
+                <h3>Optional local database</h3>
+                <p>Run the included bridge against a PostgreSQL instance on your own machine to persist
+                   projects, templates, submittals, linework sessions and the hash-chained audit log.
+                   Entirely optional — the tools work without it.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- ── Who it's for ─────────────────────────────────────────────────────── -->
+<div class="lp-wrap">
+    <section class="lp-section" id="who">
+        <h2>Who it's for</h2>
+        <p class="lp-section-lede">
+            Built around Florida survey and civil workflows, and the friction of getting a package
+            through a District CADD review.
+        </p>
+        <div class="lp-who">
+            <div class="lp-who-item">
+                <strong>Florida PSM survey firms</strong>
+                <span>Catch curve-tangency and closure errors before they reach a plat, and turn a call
+                      list into CAD geometry without retyping it.</span>
+            </div>
+            <div class="lp-who-item">
+                <strong>FDOT engineering primes</strong>
+                <span>Batch-audit multi-sheet corridor packages against CADD standards and produce a
+                      per-sheet scorecard for the submittal.</span>
+            </div>
+            <div class="lp-who-item">
+                <strong>Heavy civil contractors</strong>
+                <span>Sign and MUTCD surface-area take-offs mapped to pay items, plus drainage sizing
+                      from the Rational Method.</span>
+            </div>
+            <div class="lp-who-item">
+                <strong>Municipal &amp; District reviewers</strong>
+                <span>Run an incoming DXF through a standards scan and a closure check in the browser,
+                      with a report you can attach to the review.</span>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- ── Pricing ──────────────────────────────────────────────────────────── -->
+<div class="lp-wrap">
+    <section class="lp-section" id="pricing">
+        <h2>Pricing</h2>
+        <p class="lp-section-lede">
+            Per-month, cancel any time. The limits below are the ones the app actually enforces on
+            your account.
+        </p>
+        <div class="lp-price-grid">
+
+            <div class="lp-price">
+                <div class="lp-price-name">Free</div>
+                <div class="lp-price-tag">$0</div>
+                <div class="lp-price-for">CAD techs, students, and anyone evaluating the tools.</div>
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> Every reference table and viewer</li>
+                    <li><i class="fa-solid fa-check"></i> Standards compare &amp; DXF audit findings</li>
+                    <li><i class="fa-solid fa-check"></i> 1 seat · 5 client templates</li>
+                    <li class="off"><i class="fa-solid fa-minus"></i> No auto-fix <code>.scr</code> export</li>
+                    <li class="off"><i class="fa-solid fa-minus"></i> No full QC report</li>
+                </ul>
+                <a class="lp-btn lp-btn-ghost" href="index.html">Open the app</a>
+            </div>
+
+            <div class="lp-price featured">
+                <div class="lp-price-name">Pro <span class="lp-badge-featured">Most common</span></div>
+                <div class="lp-price-tag">$49 <span>/ month</span></div>
+                <div class="lp-price-for">Solo surveyors, freelance CAD technicians, estimators.</div>
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> Everything in Free</li>
+                    <li><i class="fa-solid fa-check"></i> One-click auto-fix <code>.scr</code> export</li>
+                    <li><i class="fa-solid fa-check"></i> Full QC &amp; Map Check reports</li>
+                    <li><i class="fa-solid fa-check"></i> 1 seat · 50 parcel extractions / mo</li>
+                    <li class="off"><i class="fa-solid fa-minus"></i> No Civil 3D add-in or API</li>
+                </ul>
+                <!-- TODO(stripe): replace with the real Payment Link from your Stripe dashboard -->
+                <a class="lp-btn lp-btn-primary" data-plan="Pro" href="#checkout-setup">Subscribe — $49/mo</a>
+            </div>
+
+            <div class="lp-price">
+                <div class="lp-price-name">Firm</div>
+                <div class="lp-price-tag">$199 <span>/ month</span></div>
+                <div class="lp-price-for">Mid-size surveying and civil firms working FDOT packages.</div>
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> Everything in Pro</li>
+                    <li><i class="fa-solid fa-check"></i> 25 seats · 25 client templates</li>
+                    <li><i class="fa-solid fa-check"></i> Unlimited parcel extractions</li>
+                    <li><i class="fa-solid fa-check"></i> Civil 3D ribbon add-in entitlement</li>
+                    <li><i class="fa-solid fa-check"></i> API access</li>
+                </ul>
+                <!-- TODO(stripe): replace with the real Payment Link from your Stripe dashboard -->
+                <a class="lp-btn lp-btn-primary" data-plan="Firm" href="#checkout-setup">Subscribe — $199/mo</a>
+            </div>
+
+            <div class="lp-price">
+                <div class="lp-price-name">Enterprise</div>
+                <div class="lp-price-tag">$499 <span>/ month</span></div>
+                <div class="lp-price-for">FDOT prime consultants and regional infrastructure AECs.</div>
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> Everything in Firm</li>
+                    <li><i class="fa-solid fa-check"></i> 50 seats · 999 client templates</li>
+                    <li><i class="fa-solid fa-check"></i> Custom firm rulesets</li>
+                    <li><i class="fa-solid fa-check"></i> Priority support</li>
+                </ul>
+                <a class="lp-btn lp-btn-ghost" data-plan="Enterprise" href="#checkout-setup">Talk to us</a>
+            </div>
+
+        </div>
+
+        <div id="checkout-setup" class="lp-honest" style="margin-top:1.5rem; border-left-color:var(--primary);">
+            <h3><i class="fa-solid fa-circle-info" style="color:var(--primary);"></i> Before this page can take payment</h3>
+            <ul>
+                <li>The <strong>Subscribe</strong> buttons above are placeholders. Create a Stripe
+                    <strong>Payment Link</strong> per plan in your Stripe dashboard and paste each URL into
+                    the matching <code>href</code> in this file — a static site can take real card payments
+                    that way with no backend, and Stripe handles the card data and PCI scope.</li>
+                <li>The in-app checkout modal is a <strong>simulation</strong>: it stores a tier in
+                    <code>localStorage</code> and enforces nothing. Don't point buyers at it. Paid features
+                    stay on the honour system until entitlements are checked somewhere the user can't edit.</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<!-- ── Honest limitations ───────────────────────────────────────────────── -->
+<div class="lp-wrap">
+    <section class="lp-section" id="limits">
+        <h2>What this is — and what it isn't</h2>
+        <p class="lp-section-lede">
+            You carry the seal. So here is the part most tools bury.
+        </p>
+        <div class="lp-honest">
+            <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i> Read this before you rely on a number</h3>
+            <ul>
+                <li><strong>The reference data is illustrative and unverified.</strong> Layer colours, the
+                    11 IDF-zone coefficients, Manning's <em>n</em> and the pay-item mappings were authored
+                    for this build and have <em>not</em> been checked against a current FDOT CADD Manual,
+                    Basis of Estimates, or Drainage Manual. Confirm any computed quantity against the
+                    authoritative FDOT source before it goes into a design.</li>
+                <li><strong>It is a pre-processor and QA/QC aid, not an authority.</strong> Nothing here is
+                    an FDOT submittal, an official compliance certificate, or a substitute for your review.
+                    The self-check summary is labelled as exactly that and carries no seal or statutory rule
+                    citation. 100% of seal authority stays with the licensed PSM or PE.</li>
+                <li><strong>It runs in the browser, which is the point — and the limit.</strong> Your drawing
+                    is parsed in the page and never uploaded, enforced by the app's CSP. The page does load
+                    fonts and icons from public CDNs, so it is not air-gapped and we don't claim
+                    it is.</li>
+                <li><strong>Sign-in, licensing and payments in the current build are demo-grade.</strong> They
+                    are browser-local and can be bypassed from devtools. Real multi-user accounts and
+                    enforced entitlements need a server; see the note under Pricing.</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<!-- ── Footer CTA ───────────────────────────────────────────────────────── -->
+<div class="lp-wrap">
+    <section class="lp-section" style="text-align:center;">
+        <h2>Try it on a real drawing</h2>
+        <p class="lp-section-lede" style="margin-left:auto; margin-right:auto;">
+            No account, no upload, no install. If it doesn't find something useful in your worst
+            drawing, nothing here is worth paying for.
+        </p>
+        <a class="lp-btn lp-btn-primary" href="index.html"><i class="fa-solid fa-play"></i> Open the app</a>
+    </section>
+
+    <footer class="lp-foot">
+        BoundaryQC · FDOT Civil 3D Standards Suite — a client-side surveying/CADD toolset.
+        Not affiliated with, endorsed by, or approved by the Florida Department of Transportation,
+        JEA, or Autodesk. FDOT, Civil 3D and JEA are the marks of their respective owners.
+        <br><br>
+        <a href="index.html">Open the app</a> ·
+        <a href="index.html#tab-help">Documentation</a>
+    </footer>
+</div>
+
+</body>
+</html>
