@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldIQ — Field-to-CAD tools for FDOT survey &amp; CADD workflows</title>
+    <meta name="description" content="Audit DXF drawings against FDOT CADD standards, check traverse and legal-description closure, edit linework over a street or aerial basemap, and export Civil 3D code files — all in your browser.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/solid.min.css">
+    <style>
+        :root {
+            --bg: #0b0f17; --bg2: #111827; --bg3: #151d30; --line: #1f2937;
+            --text: #f3f4f6; --muted: #9ca3af; --dim: #6b7280;
+            --cyan: #22d3ee; --cyan-d: #06b6d4; --emerald: #34d399; --emerald-d: #10b981; --amber: #fbbf24; --purple: #c084fc;
+            --glass: rgba(17, 24, 39, 0.65); --glass-line: rgba(255, 255, 255, 0.08);
+            --mono: 'JetBrains Mono', ui-monospace, 'Fira Code', monospace;
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        a { color: inherit; text-decoration: none; }
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 1.25rem; }
+        .mono { font-family: var(--mono); }
+        .grad { background: linear-gradient(90deg, var(--cyan), var(--emerald)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .glass { background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-line); }
+        .bg-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px); }
+        .bg-glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(circle at 50% 20%, rgba(6,182,212,.12) 0%, rgba(11,15,23,.8) 50%, #0b0f17 100%); }
+        main, header, footer { position: relative; z-index: 1; }
+        :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+        /* Nav */
+        header { position: sticky; top: 0; z-index: 50; background: rgba(11,15,23,.85); border-bottom: 1px solid rgba(31,41,55,.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .nav { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .brand { display: flex; align-items: center; gap: .75rem; }
+        .brand-mark { width: 40px; height: 40px; border-radius: 12px; padding: 1px; background: linear-gradient(45deg, #0891b2, #111827, #10b981); }
+        .brand-mark span { display: flex; width: 100%; height: 100%; border-radius: 11px; background: var(--bg); align-items: center; justify-content: center; color: var(--cyan); }
+        .brand-name { font-weight: 800; font-size: 1.25rem; letter-spacing: -.01em; }
+        .brand-sub { display: block; font: 500 .625rem var(--mono); letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-top: -2px; }
+        .nav-links { display: flex; gap: 2rem; font-size: .875rem; font-weight: 500; color: #d1d5db; }
+        .nav-links a { white-space: nowrap; }
+        .nav-links a:hover { color: var(--cyan); }
+        .nav-cta .btn { white-space: nowrap; }
+        .nav-cta { display: flex; align-items: center; gap: .75rem; }
+        .menu-btn { display: none; background: none; border: 0; color: var(--muted); font-size: 1.25rem; padding: .5rem; cursor: pointer; }
+        .menu-btn:hover { color: #fff; }
+        .mobile-menu { display: none; padding: .5rem 1.25rem 1.25rem; border-top: 1px solid var(--line); }
+        .mobile-menu.open { display: block; }
+        .mobile-menu a { display: block; padding: .6rem 0; color: #d1d5db; }
+
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; border-radius: 12px; font-weight: 700; font-size: .95rem; padding: .9rem 1.8rem; border: 0; cursor: pointer; transition: transform .2s, box-shadow .3s; }
+        .btn-primary { background: linear-gradient(90deg, var(--cyan-d), var(--emerald-d)); color: #0b0f17; box-shadow: 0 0 20px -3px rgba(6,182,212,.5); }
+        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 30px 2px rgba(6,182,212,.7); }
+        .btn-ghost { background: var(--glass); border: 1px solid rgba(55,65,81,.8); color: #fff; font-weight: 600; }
+        .btn-ghost:hover { background: rgba(31,41,55,.8); }
+        .btn-sm { padding: .55rem 1.1rem; font-size: .85rem; border-radius: 10px; }
+
+        /* Hero */
+        .hero { padding: 4rem 0 5rem; text-align: center; }
+        .pill { display: inline-flex; align-items: center; gap: .6rem; padding: .4rem .9rem; border-radius: 999px; font: .75rem var(--mono); color: #67e8f9; border: 1px solid rgba(6,182,212,.3); }
+        .pill b { color: var(--emerald); text-transform: uppercase; letter-spacing: .08em; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); }
+        h1 { font-size: clamp(2.25rem, 6vw, 4.4rem); line-height: 1.1; letter-spacing: -.025em; font-weight: 800; margin: 1.5rem auto 0; max-width: 17ch; }
+        .lead { font-size: clamp(1rem, 2vw, 1.25rem); color: var(--muted); max-width: 46rem; margin: 1.5rem auto 0; }
+        .cta-row { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 2rem; }
+        .ticks { display: flex; flex-wrap: wrap; gap: .75rem 2.5rem; justify-content: center; margin-top: 2rem; font: .75rem var(--mono); color: var(--muted); }
+        .ticks i { color: var(--emerald); margin-right: .4rem; }
+
+        .showcase { position: relative; max-width: 1000px; margin: 3.5rem auto 0; }
+        .showcase::before { content: ""; position: absolute; inset: -4px; border-radius: 28px; background: linear-gradient(90deg, rgba(6,182,212,.4), rgba(20,184,166,.3), rgba(16,185,129,.4)); filter: blur(32px); opacity: .6; z-index: -1; }
+        .frame { border-radius: 18px; padding: .6rem; border: 1px solid rgba(55,65,81,.8); box-shadow: 0 25px 50px -12px rgba(0,0,0,.6); }
+        .bezel { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .5rem 1rem; border-bottom: 1px solid var(--line); margin-bottom: .5rem; font: .75rem var(--mono); color: var(--muted); }
+        .lights span { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: .4rem; }
+        .photo { position: relative; border-radius: 12px; overflow: hidden; min-height: 460px; background: var(--bg2); display: flex; align-items: flex-end; }
+        .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .7s; }
+        .photo:hover img { transform: scale(1.04); }
+        .photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg), rgba(11,15,23,.35), transparent); }
+        .photo-body { position: relative; z-index: 2; width: 100%; padding: 1.5rem; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; text-align: left; }
+        .hud { max-width: 28rem; padding: 1rem; border-radius: 12px; border-color: rgba(6,182,212,.4); }
+        .hud small { display: block; font: 700 .7rem var(--mono); color: var(--emerald); margin-bottom: .3rem; }
+        .hud h3 { margin: 0; font-size: 1.1rem; }
+        .hud p { margin: .3rem 0 0; font-size: .75rem; color: #d1d5db; }
+        .chips { display: flex; flex-wrap: wrap; gap: .5rem; font: .75rem var(--mono); }
+        .chip { padding: .5rem .8rem; border-radius: 8px; background: rgba(11,15,23,.85); border: 1px solid #374151; color: #67e8f9; }
+        .chip span { color: var(--dim); }
+        .note { margin-top: .6rem; font: .68rem var(--mono); color: var(--dim); text-align: right; }
+
+        /* Sections */
+        section { padding: 5rem 0; border-top: 1px solid rgba(31,41,55,.8); }
+        .alt { background: rgba(17,24,39,.4); }
+        .sec-head { text-align: center; max-width: 46rem; margin: 0 auto 3rem; }
+        .eyebrow { font: .75rem var(--mono); text-transform: uppercase; letter-spacing: .15em; color: var(--cyan); margin: 0 0 .5rem; }
+        .eyebrow.em { color: var(--emerald); }
+        .sec-head h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; margin: 0; line-height: 1.2; }
+        .sec-head p { color: var(--muted); margin: .9rem 0 0; }
+
+        /* Tool explorer */
+        .explorer { display: grid; grid-template-columns: 5fr 7fr; gap: 1.5rem; align-items: start; }
+        .tabs { display: flex; flex-direction: column; gap: .75rem; }
+        .tab { text-align: left; border-radius: 14px; padding: 1.1rem 1.25rem; background: var(--glass); border: 1px solid var(--glass-line); color: var(--text); cursor: pointer; font: inherit; transition: border-color .25s, box-shadow .25s; }
+        .tab:hover { border-color: rgba(6,182,212,.4); }
+        .tab[aria-selected="true"] { border-color: var(--cyan-d); box-shadow: 0 0 25px -5px rgba(6,182,212,.35); }
+        .tab i { color: var(--cyan); margin-right: .6rem; }
+        .tab strong { font-size: 1rem; }
+        .tab span { display: block; font-size: .8rem; color: var(--muted); margin-top: .25rem; }
+        .panel { border-radius: 16px; padding: 1.75rem; min-height: 22rem; }
+        .panel[hidden] { display: none; }
+        .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); margin-bottom: 1.25rem; }
+        .panel-head h3 { margin: 0; font-size: 1.3rem; }
+        .badge { padding: .25rem .7rem; border-radius: 999px; font: 600 .7rem var(--mono); background: rgba(6,182,212,.18); color: #67e8f9; border: 1px solid rgba(6,182,212,.3); white-space: nowrap; }
+        .tools { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+        .tools li { padding: .9rem 1rem; border-radius: 12px; background: rgba(11,15,23,.7); border: 1px solid var(--line); }
+        .tools b { display: block; font-size: .9rem; }
+        .tools span { font-size: .8rem; color: var(--muted); }
+
+        /* Cards */
+        .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+        .card { position: relative; overflow: hidden; border-radius: 16px; padding: 2rem; transition: border-color .3s, box-shadow .3s, transform .3s; }
+        .card:hover { border-color: rgba(6,182,212,.4); box-shadow: 0 0 25px -5px rgba(6,182,212,.25); transform: translateY(-2px); }
+        .card .ghost { position: absolute; top: 1rem; right: 1.5rem; font-size: 5rem; opacity: .08; }
+        .icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 1.25rem; border: 1px solid; }
+        .c-cyan { background: rgba(6,182,212,.2); color: var(--cyan); border-color: rgba(6,182,212,.3); }
+        .c-em { background: rgba(16,185,129,.2); color: var(--emerald); border-color: rgba(16,185,129,.3); }
+        .c-pu { background: rgba(168,85,247,.2); color: var(--purple); border-color: rgba(168,85,247,.3); }
+        .c-am { background: rgba(245,158,11,.2); color: var(--amber); border-color: rgba(245,158,11,.3); }
+        .card h3 { margin: 0 0 .6rem; font-size: 1.25rem; }
+        .card p { margin: 0 0 1.25rem; font-size: .9rem; color: var(--muted); }
+        .card ul { list-style: none; margin: 0; padding: 0; font: .75rem var(--mono); color: #d1d5db; display: grid; gap: .5rem; }
+        .card li i { color: var(--emerald); margin-right: .5rem; }
+
+        /* Stats */
+        .stats { padding: 4rem 0; background: rgba(17,24,39,.6); border-bottom: 1px solid var(--line); }
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; text-align: center; }
+        .stat-grid b { display: block; font: 900 clamp(2rem, 5vw, 3rem) var(--mono); }
+        .stat-grid span { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+
+        /* Final CTA */
+        .final { border-radius: 24px; padding: clamp(2rem, 6vw, 3.5rem); text-align: center; border-color: rgba(55,65,81,.8); box-shadow: 0 25px 50px -12px rgba(0,0,0,.5); }
+        .final h2 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 800; margin: 1.25rem auto 0; max-width: 18ch; }
+        .final p { color: var(--muted); max-width: 36rem; margin: 1rem auto 0; }
+
+        footer { border-top: 1px solid var(--line); background: var(--bg); padding: 2.5rem 0; font-size: .75rem; color: var(--muted); }
+        .foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+        .foot nav { display: flex; gap: 1.5rem; }
+        .foot a:hover { color: #d1d5db; }
+        .fine { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(31,41,55,.8); font: .7rem var(--mono); color: var(--dim); }
+
+        /* Six nav links: tighten them below 1200px, and use the menu button before they run out of room. */
+        @media (max-width: 1200px) { .nav-links { gap: 1.25rem; } }
+        @media (max-width: 1000px) {
+            .nav-links { display: none; }
+            .menu-btn { display: block; }
+        }
+        @media (max-width: 900px) {
+            .nav-links, .nav-cta .hide-sm { display: none; }
+            .menu-btn { display: block; }
+            .explorer, .grid2 { grid-template-columns: 1fr; }
+            .stat-grid { grid-template-columns: repeat(2, 1fr); }
+            .bezel .hide-sm { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } .photo:hover img { transform: none; } }
+    </style>
+</head>
+<body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header>
+        <div class="wrap nav">
+            <a href="home.html" class="brand" aria-label="FieldIQ home">
+                <span class="brand-mark"><span><i class="fa-solid fa-cubes"></i></span></span>
+                <span>
+                    <span class="brand-name">FIELD<span class="grad">IQ</span></span>
+                    <span class="brand-sub">Field-to-CAD tools</span>
+                </span>
+            </a>
+            <nav class="nav-links" aria-label="Primary">
+                <a href="#tools">Tools</a>
+                <a href="#capabilities">Capabilities</a>
+                <a href="#numbers">By the numbers</a>
+                <a href="landing.html">Overview</a>
+                <a href="https://github.com/band72/fdot-civil3d-site" target="_blank" rel="noopener">View Code</a>
+                <a href="https://github.com/band72/fdot-civil3d-site/issues/new?template=problem.yml" target="_blank" rel="noopener">Report Errors</a>
+            </nav>
+            <div class="nav-cta">
+                <a href="index.html" class="btn btn-primary btn-sm">Open the tools <i class="fa-solid fa-arrow-right"></i></a>
+                <button class="menu-btn" id="menu-btn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu"><i class="fa-solid fa-bars"></i></button>
+            </div>
+        </div>
+        <div class="mobile-menu" id="mobile-menu">
+            <a href="#tools">Tools</a>
+            <a href="#capabilities">Capabilities</a>
+            <a href="#numbers">By the numbers</a>
+            <a href="landing.html">Overview</a>
+            <a href="https://github.com/band72/fdot-civil3d-site" target="_blank" rel="noopener">View Code</a>
+            <a href="https://github.com/band72/fdot-civil3d-site/issues/new?template=problem.yml" target="_blank" rel="noopener">Report Errors</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero -->
+        <div class="hero">
+            <div class="wrap">
+                <span class="pill glass"><span class="dot"></span><b>Runs in your browser</b><span style="color:var(--dim)">|</span><span>No install · no upload</span></span>
+                <h1>Field data to <span class="grad">Civil 3D</span>, checked on the way.</h1>
+                <p class="lead">Audit DXF drawings against FDOT CADD standards, check traverse and legal-description closure, edit linework over a street or aerial basemap, and export Civil 3D code files &mdash; without installing anything.</p>
+                <div class="cta-row">
+                    <a href="index.html" class="btn btn-primary"><i class="fa-solid fa-rocket"></i> Open the tools</a>
+                    <a href="#tools" class="btn btn-ghost"><i class="fa-solid fa-compass"></i> Explore what's inside</a>
+                </div>
+                <div class="ticks">
+                    <span><i class="fa-solid fa-check"></i>DXF, LandXML &amp; CSV in and out</span>
+                    <span><i class="fa-solid fa-check"></i>192 coordinate systems</span>
+                    <span><i class="fa-solid fa-check"></i>Data stays in your browser</span>
+                </div>
+
+                <div class="showcase">
+                    <div class="frame glass">
+                        <div class="bezel">
+                            <span class="lights" aria-hidden="true"><span style="background:rgba(239,68,68,.8)"></span><span style="background:rgba(234,179,8,.8)"></span><span style="background:rgba(34,197,94,.8)"></span><b class="hide-sm" style="color:#d1d5db">FIELD-TO-CAD WORKFLOW</b></span>
+                            <span style="color:var(--emerald)"><i class="fa-solid fa-map"></i> Linework over a basemap</span>
+                        </div>
+                        <div class="photo">
+                            <img src="assets/home-hero.jpg" width="1408" height="768" alt="A survey crew at a utility substation reviewing a map on a rugged tablet and a laptop (illustrative image)">
+                            <div class="photo-body">
+                                <div class="hud glass">
+                                    <small>CHECK IN THE FIELD, FINISH IN THE OFFICE</small>
+                                    <h3>One workflow, tablet to desktop</h3>
+                                    <p>Import field points, check closure and codes, correct linework against a street or aerial map, then export DXF, LandXML or a Civil 3D code file.</p>
+                                </div>
+                                <div class="chips">
+                                    <div class="chip"><span>COORDINATE SYSTEMS:</span> 192</div>
+                                    <div class="chip"><span>BASEMAPS:</span> 4</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="note">Illustrative image (AI-generated). Brand names shown in it are not affiliated with this project.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tool explorer -->
+        <section id="tools" class="alt">
+            <div class="wrap">
+                <div class="sec-head">
+                    <p class="eyebrow">What's inside</p>
+                    <h2>Pick a workflow to see the tools</h2>
+                    <p>Every tool below is in the app today. Select a workflow for the tools that cover it.</p>
+                </div>
+                <div class="explorer">
+                    <div class="tabs" role="tablist" aria-label="Workflows">
+                        <button class="tab" role="tab" id="tab-qc" aria-controls="panel-qc" aria-selected="true" data-tab="qc">
+                            <strong><i class="fa-solid fa-file-circle-check"></i>QC &amp; audit</strong>
+                            <span>Check drawings, traverses and legal descriptions.</span>
+                        </button>
+                        <button class="tab" role="tab" id="tab-linework" aria-controls="panel-linework" aria-selected="false" data-tab="linework">
+                            <strong><i class="fa-solid fa-pen-ruler"></i>Linework &amp; basemap</strong>
+                            <span>Import field data, edit it, and see it on a map.</span>
+                        </button>
+                        <button class="tab" role="tab" id="tab-export" aria-controls="panel-export" aria-selected="false" data-tab="export">
+                            <strong><i class="fa-solid fa-file-export"></i>Export &amp; convert</strong>
+                            <span>Hand clean data to Civil 3D and other software.</span>
+                        </button>
+                    </div>
+                    <div>
+                        <div class="panel glass" role="tabpanel" id="panel-qc" aria-labelledby="tab-qc">
+                            <div class="panel-head"><h3>QC &amp; audit</h3><span class="badge">CHECK</span></div>
+                            <ul class="tools">
+                                <li><b>Easy Button</b><span>Load your code list once, then turn any crew's field file into linework on the right layers, ready to edit.</span></li>
+                                <li><b>Standards Compare + Auto-Correct</b><span>Check a DXF against the built-in FDOT 2026 layer standard, an uploaded standard or a master template, then write a corrected DXF.</span></li>
+                                <li><b>DXF Project Auditor</b><span>Inspect a drawing's layers, entities and structure for problems before it goes out.</span></li>
+                                <li><b>Traverse &amp; COGO Auditor</b><span>Misclosure, precision and bow-tie (self-intersection) checks on a traverse.</span></li>
+                                <li><b>Legal Description QC</b><span>Parse a narrative description, plot the deed linework, close it and compute area.</span></li>
+                            </ul>
+                        </div>
+                        <div class="panel glass" role="tabpanel" id="panel-linework" aria-labelledby="tab-linework" hidden>
+                            <div class="panel-head"><h3>Linework &amp; basemap</h3><span class="badge">EDIT</span></div>
+                            <ul class="tools">
+                                <li><b>Linework Editor</b><span>Import a point file or a bearing/distance call list, run field-data checks, then edit vertices and courses interactively. Civil 3D linework codes (B/C/E/CLS, arcs, circles, rectangles) are honored.</span></li>
+                                <li><b>Basemap overlay</b><span>Turn on an OpenStreetMap, Carto or USGS imagery / topo basemap behind the linework. Choose from 192 State Plane, UTM and provincial coordinate systems in meters or feet. Off by default.</span></li>
+                                <li><b>Subdivision concept layout</b><span>Divide a boundary into lots with a cul-de-sac or through road and green space, adjust everything live, and export DXF or PDF.</span></li>
+                                <li><b>EFB handbook tools</b><span>FDOT EFB point and reference naming, curve geometry and chain lists, feeding the editor.</span></li>
+                            </ul>
+                        </div>
+                        <div class="panel glass" role="tabpanel" id="panel-export" aria-labelledby="tab-export" hidden>
+                            <div class="panel-head"><h3>Export &amp; convert</h3><span class="badge">DELIVER</span></div>
+                            <ul class="tools">
+                                <li><b>DXF &rarr; Code File</b><span>Turn a DXF's lines, arcs, circles and polylines into a Civil 3D survey code file with numbered figures.</span></li>
+                                <li><b>Linework exports</b><span>DXF, LandXML 1.2, CSV, P,N,E,Z,D text, a Civil 3D linework script, call lists and a Map Check report.</span></li>
+                                <li><b>Parcel &rarr; DXF and reports</b><span>Plot parcels to DXF, and produce HTML / Markdown reports from the checks above.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Capabilities -->
+        <section id="capabilities">
+            <div class="wrap">
+                <div class="sec-head">
+                    <p class="eyebrow">Under the hood</p>
+                    <h2>Built around the numbers surveyors check</h2>
+                    <p>One shared geometry kernel, so every tool computes bearings, closures and areas the same way.</p>
+                </div>
+                <div class="grid2">
+                    <div class="card glass">
+                        <i class="fa-solid fa-location-crosshairs ghost c-cyan" style="background:none;border:0"></i>
+                        <div class="icon c-cyan"><i class="fa-solid fa-earth-americas"></i></div>
+                        <h3>Coordinate systems</h3>
+                        <p>NAD83 State Plane for all 50 states, Puerto Rico and the Virgin Islands, Caribbean UTM, and Canadian UTM, MTM and provincial grids, in meters, US survey feet or international feet.</p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i>Transverse Mercator, Lambert, Albers, oblique Mercator</li>
+                            <li><i class="fa-solid fa-check"></i>Checked against pyproj to within 5 mm</li>
+                        </ul>
+                    </div>
+                    <div class="card glass">
+                        <i class="fa-solid fa-diagram-project ghost c-em" style="background:none;border:0"></i>
+                        <div class="icon c-em"><i class="fa-solid fa-vector-square"></i></div>
+                        <h3>Field-data checks</h3>
+                        <p>Closure, snapping and self-intersection checks run as soon as data is imported, so problems surface before they reach the drawing.</p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i>Adjustable close and snap tolerances</li>
+                            <li><i class="fa-solid fa-check"></i>Undo / redo on every edit</li>
+                        </ul>
+                    </div>
+                    <div class="card glass">
+                        <i class="fa-solid fa-layer-group ghost c-pu" style="background:none;border:0"></i>
+                        <div class="icon c-pu"><i class="fa-solid fa-layer-group"></i></div>
+                        <h3>FDOT CADD standards</h3>
+                        <p>Layer, linetype and style checks against an FDOT standard, with safe auto-correction to a new DXF. The original is never overwritten.</p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i>Built-in, uploaded or template-based standards</li>
+                            <li><i class="fa-solid fa-check"></i>Reference data is illustrative &mdash; verify before use</li>
+                        </ul>
+                    </div>
+                    <div class="card glass">
+                        <i class="fa-solid fa-shield-halved ghost c-am" style="background:none;border:0"></i>
+                        <div class="icon c-am"><i class="fa-solid fa-lock"></i></div>
+                        <h3>Private by design</h3>
+                        <p>Everything runs in your browser. Drawings and field files are not uploaded, and the page makes no third-party requests unless you turn the optional basemap on.</p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i>Strict content security policy</li>
+                            <li><i class="fa-solid fa-check"></i>Fonts and icons are self-hosted</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Numbers -->
+        <div class="stats" id="numbers">
+            <div class="wrap">
+                <div class="stat-grid">
+                    <div><b class="grad">192</b><span>Coordinate systems</span></div>
+                    <div><b class="grad">50</b><span>States covered</span></div>
+                    <div><b class="grad">4</b><span>Basemap sources</span></div>
+                    <div><b class="grad">0</b><span>Third-party requests by default</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final CTA -->
+        <section class="alt">
+            <div class="wrap" style="max-width:960px">
+                <div class="final glass">
+                    <span class="pill glass"><span class="dot"></span><b>Ready when you are</b></span>
+                    <h2>Open the tools and load your <span class="grad">field data</span></h2>
+                    <p>Drop in a point file or a DXF and start checking. A sample dataset is built in if you just want to look around.</p>
+                    <div class="cta-row">
+                        <a href="index.html" class="btn btn-primary"><i class="fa-solid fa-rocket"></i> Open the tools</a>
+                        <a href="landing.html" class="btn btn-ghost"><i class="fa-solid fa-globe"></i> Read the overview</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="wrap">
+            <div class="foot">
+                <span><b style="color:#fff">FIELD<span class="grad">IQ</span></b> &nbsp;|&nbsp; Field-to-CAD tools for FDOT survey &amp; CADD workflows</span>
+                <nav aria-label="Footer"><a href="index.html">Tools</a><a href="landing.html">Overview</a></nav>
+            </div>
+            <p class="fine">Reference data in these tools is illustrative and unverified. Confirm against current FDOT standards and your project requirements before relying on any result. Basemap imagery is for orientation only and is not survey-grade.</p>
+        </div>
+    </footer>
+
+    <script src="assets/home.js" defer></script>
+</body>
+</html>

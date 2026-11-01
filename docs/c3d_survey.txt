@@ -1,0 +1,692 @@
+================================================================================
+AUTODESK CIVIL 3D - SURVEY COMMAND LANGUAGE & COMMAND LINE REFERENCE
+================================================================================
+Comprehensive Reference Guide for Survey Command Window, Field Book (.FBK),
+Linework Code Sets, and Survey Transparent Commands
+================================================================================
+
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1.  OVERVIEW & SYNTAX CONVENTIONS
+2.  POINT CREATION COMMANDS (COGO)
+3.  POINT LOCATION & SEARCH COMMANDS
+4.  POINT INFORMATION & GEOMETRIC CALCULATIONS (INVERSE, ANGLE, AREA)
+5.  POINT EDITING & MODIFICATION COMMANDS
+6.  FIGURE COMMANDS (LINEWORK & FEATURE LINES)
+7.  INTERSECTION COMMANDS (COGO INTERSECTIONS)
+8.  BASELINE COMMANDS (STATION & OFFSET)
+9.  CENTERLINE / ALIGNMENT COMMANDS
+10. SETUP & OBSERVATION COMMANDS (FIELD BOOK / .FBK FORMAT)
+10B. TRAVERSE & NETWORK ADJUSTMENT COMMANDS
+11. LINEWORK CODE SET SYNTAX (FIELD-TO-FINISH CODES)
+11B. FDOT STATE KIT SURVEY LINEWORK STANDARDS
+12. CIVIL 3D SURVEY TRANSPARENT COMMANDS
+13. SAMPLE SCRIPTS & WORKFLOW EXAMPLES
+
+================================================================================
+1. OVERVIEW & SYNTAX CONVENTIONS
+================================================================================
+The Survey Command Language is the text-based command interpreter built into 
+Autodesk Civil 3D (Survey Toolspace > Survey Database > Networks > Survey Command 
+Window) and used within Autodesk Field Book (.FBK) files.
+
+SYNTAX RULES:
+- Commands are not case-sensitive, but traditionally shown in UPPERCASE.
+- Square brackets [ ] enclose REQUIRED parameters.
+- Parentheses ( ) enclose OPTIONAL parameters.
+- Do NOT type the brackets [ ] or parentheses ( ) when entering commands.
+- Values with spaces in descriptions should be wrapped in double quotes " ".
+- Angles and bearings are entered according to current drawing angle units:
+    * Quadrant bearings: [Quadrant 1-4] [DD.MMSS] (e.g., 1 45.3020 for N 45°30'20" E)
+        Quadrant 1 = North-East (NE)
+        Quadrant 2 = South-East (SE)
+        Quadrant 3 = South-West (SW)
+        Quadrant 4 = North-West (NW)
+    * Azimuths: [DDD.MMSS] (e.g., 135.4510 for 135°45'10")
+    * Deflection angles: Left (-) or Right (+), or specified by L/R prefix.
+
+================================================================================
+2. POINT CREATION COMMANDS (COGO)
+================================================================================
+These commands compute coordinates and insert survey points into the active
+Survey Database and drawing.
+
+AD (Angle Distance)
+    Syntax:  AD (point) [angle] [distance] (description)
+    Purpose: Creates a point at a specified horizontal angle and distance from 
+             the current reference point and reference line.
+    Example: AD 101 45.3000 125.50 "IP PIN"
+
+AD VA (Angle Distance Vertical Angle)
+    Syntax:  AD VA (point) [angle] [distance] [vertical angle] (description)
+    Purpose: Creates a 3D point using horizontal angle, slope distance, and 
+             vertical angle.
+    Example: AD VA 102 90.0000 250.00 88.3000 "TOP BANK"
+
+AD VD (Angle Distance Vertical Distance)
+    Syntax:  AD VD (point) [angle] [distance] [vertical distance] (description)
+    Purpose: Creates a 3D point using horizontal angle, horizontal distance, 
+             and elevation difference (+/- delta Z).
+    Example: AD VD 103 120.1500 85.20 -2.45 "TOE"
+
+AZ (Azimuth Distance)
+    Syntax:  AZ (point) [azimuth] [distance] (description)
+    Purpose: Creates a point from current occupation point along an azimuth.
+    Example: AZ 104 215.4520 310.25 "EP"
+
+AZ VA (Azimuth Distance Vertical Angle)
+    Syntax:  AZ VA (point) [azimuth] [slope dist] [vert angle] (description)
+    Purpose: Creates a point with azimuth, slope distance, and vertical angle.
+    Example: AZ VA 105 180.0000 142.10 91.1500 "CONC MON"
+
+AZ VD (Azimuth Distance Vertical Distance)
+    Syntax:  AZ VD (point) [azimuth] [horiz dist] [delta Z] (description)
+    Purpose: Creates a point with azimuth, horizontal distance, and elevation diff.
+    Example: AZ VD 106 270.0000 50.00 1.20 "CL ROAD"
+
+BD (Bearing Distance)
+    Batch Syntax:       BD [point] [quadrant] [bearing] [distance] (description)
+    Alternative Order:  BD [point] [bearing] [quadrant] [distance] (description)
+    Interactive Prompt: Prompts in sequence: Point? -> Quadrant (1-4)? -> Bearing (DD.MMSS)? -> Distance? -> Description?
+    Purpose: Creates a point using quadrant bearing and distance from current setup.
+             Quadrant: 1=NE, 2=SE, 3=SW, 4=NW. Bearing: DD.MMSS format.
+    Example: BD 107 1 45.3015 200.00 "PROP CORNER"
+             (Creates point 107 on bearing N 45°30'15" E at distance 200.00 ft)
+
+BD VA (Bearing Distance Vertical Angle)
+    Syntax:  BD VA [point] [quad] [bearing] [slope dist] [vert angle] (desc)
+    Purpose: Creates a point using bearing, slope distance, and vertical angle.
+    Example: BD VA 108 2 89.1000 150.00 89.4500 "WALL"
+
+BD VD (Bearing Distance Vertical Distance)
+    Syntax:  BD VD [point] [quad] [bearing] [horiz dist] [delta Z] (desc)
+    Purpose: Creates a point using bearing, distance, and vertical elevation diff.
+    Example: BD VD 109 4 12.0000 80.00 0.50 "CURB"
+
+DD (Deflection Distance)
+    Syntax:  DD (point) [deflection angle] [distance] (description)
+    Purpose: Creates a point by deflecting left or right from the back-course line.
+    Example: DD 110 -15.3000 100.00 "CL" (Deflects 15°30' Left)
+
+DD VA (Deflection Distance Vertical Angle)
+    Syntax:  DD VA (point) [deflection] [slope dist] [vert angle] (desc)
+    Example: DD VA 111 25.0000 120.00 90.0000 "POLE"
+
+DD VD (Deflection Distance Vertical Distance)
+    Syntax:  DD VD (point) [deflection] [horiz dist] [delta Z] (desc)
+    Example: DD VD 112 -90.0000 35.00 -1.10 "FL"
+
+NE (Northing Easting)
+    Syntax:  NE [point] [northing] [easting] (description)
+    Purpose: Directly inserts a 2D coordinate point into survey database.
+    Example: NE 1 1500250.45 520410.88 "CP1 PK NAIL"
+
+NEZ (Northing Easting Elevation)
+    Syntax:  NEZ [point] [northing] [easting] [elevation] (description)
+    Purpose: Directly inserts a 3D coordinate point into survey database.
+    Example: NEZ 2 1500300.00 520500.00 42.65 "BENCHMARK BM-1"
+
+PT (Point by Number)
+    Syntax:  PT [point]
+    Purpose: Recalls an existing survey point by number as the current setup.
+    Example: PT 1
+
+ZD (Zenith Distance)
+    Syntax:  ZD (point) [azimuth/angle] [slope dist] [zenith angle] (desc)
+    Purpose: Creates a point using zenith angle (0 = directly overhead, 90 = level).
+    Example: ZD 115 45.0000 100.00 89.3000 "ROOF"
+
+================================================================================
+3. POINT LOCATION & SEARCH COMMANDS
+================================================================================
+LOC PT (Locate Point)
+    Syntax:  LOC PT [point]
+    Purpose: Highlights and zooms to the specified point in the active drawing.
+    Example: LOC PT 105
+
+FIND (Find Points by Query)
+    Syntax:  FIND [description | point range]
+    Purpose: Searches and lists all points matching point numbers or raw code.
+    Example: FIND 100-150
+    Example: FIND "IP*"
+
+LIST PT (List Point Attributes)
+    Syntax:  LIST PT [point] (point 2)
+    Purpose: Displays Northing, Easting, Elevation, Description for point(s).
+    Example: LIST PT 1 10
+
+DUMP PT (Dump Raw Coordinate Data)
+    Syntax:  DUMP PT [point]
+    Purpose: Outputs detailed raw coordinate and survey observation metadata.
+    Example: DUMP PT 101
+
+================================================================================
+4. POINT INFORMATION & GEOMETRIC CALCULATIONS
+================================================================================
+INVERSE (Point to Point Inverse)
+    Syntax:  INV [point 1] [point 2]
+    Purpose: Computes and displays azimuth, bearing, horizontal distance, 
+             slope distance, delta Northing, delta Easting, and grade between points.
+    Example: INV 1 2
+
+ANGLE (Included Angle)
+    Syntax:  ANGLE [point backsight] [point occupied] [point foresight]
+    Purpose: Computes the clockwise included angle between three survey points.
+    Example: ANGLE 1 2 3
+
+DIST (Distance)
+    Syntax:  DIST [point 1] [point 2]
+    Purpose: Returns the 2D and 3D Euclidean distance between two points.
+    Example: DIST 101 102
+
+AREA (Shoelace Polygon Area)
+    Syntax:  AREA [point 1] [point 2] [point 3] ... [point N]
+    Purpose: Computes closed polygon area in square feet, square meters, and acres.
+    Example: AREA 1 2 3 4 1
+
+DIR (Direction)
+    Syntax:  DIR [point 1] [point 2]
+    Purpose: Returns direction in both quadrant bearing and 360° azimuth.
+    Example: DIR 10 20
+
+ELEV DIFF (Elevation Difference)
+    Syntax:  ELEV DIFF [point 1] [point 2]
+    Purpose: Returns vertical difference (Z2 - Z1) and slope percentage.
+    Example: ELEV DIFF 100 101
+
+================================================================================
+5. POINT EDITING & MODIFICATION COMMANDS
+================================================================================
+MOD DESC (Modify Description)
+    Syntax:  MOD DESC [point] [new description]
+    Purpose: Updates the raw survey description of a point.
+    Example: MOD DESC 101 "1/2 IN REBAR WITH CAP LB1234"
+
+MOD ELEV (Modify Elevation)
+    Syntax:  MOD ELEV [point] [new elevation]
+    Purpose: Overwrites the elevation of an existing point.
+    Example: MOD ELEV 101 45.12
+
+MOD NORTH (Modify Northing)
+    Syntax:  MOD NORTH [point] [new northing]
+    Purpose: Overwrites the northing coordinate.
+    Example: MOD NORTH 1 1500255.10
+
+MOD EAST (Modify Easting)
+    Syntax:  MOD EAST [point] [new easting]
+    Purpose: Overwrites the easting coordinate.
+    Example: MOD EAST 1 520412.00
+
+DEL PT (Delete Point)
+    Syntax:  DEL PT [point]
+    Purpose: Removes point from the survey database and current network.
+    Example: DEL PT 999
+
+REN PT (Rename / Renumber Point)
+    Syntax:  REN PT [old point number] [new point number]
+    Purpose: Changes the point number identifier.
+    Example: REN PT 99 1099
+
+================================================================================
+6. FIGURE COMMANDS (LINEWORK & FEATURE LINES)
+================================================================================
+Figure commands create, trace, and manage continuous 2D/3D survey figures 
+(such as curb lines, edge of pavement, right-of-way, parcels, and breaklines).
+
+FIG BEGIN (Figure Begin)
+    Syntax:  FIG BEGIN [figure name] (layer)
+    Alias:   BEG [figure name]
+    Purpose: Starts a new survey figure. Subsequent points are connected in order.
+    Example: FIG BEGIN EP_LEFT
+    Example: BEG R_W_LINE
+
+FIG END (Figure End)
+    Syntax:  FIG END
+    Alias:   END
+    Purpose: Ends the current active survey figure.
+    Example: FIG END
+
+FIG CONT (Figure Continue)
+    Syntax:  FIG CONT [figure name]
+    Purpose: Resumes adding vertices to an existing figure previously ended.
+    Example: FIG CONT EP_LEFT
+
+FIG CLOSE (Figure Close)
+    Syntax:  FIG CLOSE
+    Alias:   CLOSE
+    Purpose: Closes the current figure by drawing a line back to its starting vertex.
+    Example: FIG CLOSE
+
+FIG PT (Figure Add Point Vertex)
+    Syntax:  FIG PT [point]
+    Alias:   PT [point]
+    Purpose: Adds an existing survey point number as the next vertex in the figure.
+    Example: FIG PT 101
+    Example: FIG PT 102
+
+FIG CRV (Figure Curve)
+    Syntax:  FIG CRV [radius] [arc length | delta angle | chord length]
+    Purpose: Adds an arc/curve segment to the figure from current vertex.
+    Example: FIG CRV 250.00 75.50
+
+FIG CIR (Figure Circle by Center and Radius)
+    Syntax:  FIG CIR [center point] [radius]
+    Purpose: Creates a full circular figure around a point.
+    Example: FIG CIR 500 15.00
+
+FIG OFFSET (Figure Offset Linework)
+    Syntax:  FIG OFFSET [offset distance] (elevation diff)
+    Purpose: Generates a parallel offset figure (positive = right, negative = left).
+    Example: FIG OFFSET 12.00 -0.25 (12 ft right, 0.25 ft down for curb)
+
+FIG REVERSE (Figure Reverse Direction)
+    Syntax:  FIG REVERSE [figure name]
+    Purpose: Reverses vertex sequence from start to end.
+    Example: FIG REVERSE EP_RIGHT
+
+FIG DEL (Figure Delete)
+    Syntax:  FIG DEL [figure name]
+    Purpose: Deletes a survey figure from the network.
+    Example: FIG DEL TEMP_LINE
+
+FIG RENAME (Figure Rename)
+    Syntax:  FIG RENAME [old name] [new name]
+    Purpose: Renames a survey figure.
+    Example: FIG RENAME FIG1 DRAIN_SWALE
+
+FIG ELEV (Figure Assign Elevation)
+    Syntax:  FIG ELEV [figure name] [elevation]
+    Purpose: Sets a constant elevation across all vertices of a figure.
+    Example: FIG ELEV BLDG_PAD 48.50
+
+================================================================================
+7. INTERSECTION COMMANDS (COGO INTERSECTIONS)
+================================================================================
+Intersection commands compute intersection points between bearings, azimuths,
+distances, and lines. Points can be recorded to database using the SAVE command.
+
+BB (Bearing - Bearing Intersection)
+    Syntax:  BB [point 1] [bearing 1] [quad 1] (offset 1) [point 2] [bearing 2] [quad 2] (offset 2)
+    Purpose: Computes intersection of two lines defined by bearing and quadrant.
+    Example: BB 1 45.0000 1 0.00 2 45.0000 4 0.00
+
+AZAZ (Azimuth - Azimuth Intersection)
+    Syntax:  AZAZ [point 1] [azimuth 1] (offset 1) [point 2] [azimuth 2] (offset 2)
+    Purpose: Computes intersection of two lines defined by azimuths.
+    Example: AZAZ 1 45.0000 0.00 2 315.0000 0.00
+
+DD (Distance - Distance Intersection)
+    Syntax:  DD [point 1] [radius 1] [point 2] [radius 2] [solution 1 or 2]
+    Purpose: Computes intersection of two circles/distances from known points.
+    Example: DD 10 150.00 11 125.00 1
+
+LNLN (Line - Line Intersection)
+    Syntax:  LNLN [pt 1] [pt 2] (offset 1-2) [pt 3] [pt 4] (offset 3-4)
+    Purpose: Computes intersection of line 1-2 and line 3-4.
+    Example: LNLN 1 2 0.00 3 4 0.00
+
+ARCAZ (Arc - Azimuth Intersection)
+    Syntax:  ARCAZ [center pt] [radius] [pt 1] [azimuth] [solution 1 or 2]
+    Purpose: Computes intersection of a radial arc and an azimuth line.
+    Example: ARCAZ 10 100.00 20 85.3000 1
+
+ARCDIST (Arc - Distance Intersection)
+    Syntax:  ARCDIST [center pt] [radius 1] [from pt] [distance 2] [sol 1 or 2]
+    Purpose: Computes intersection of an arc with a distance arc.
+    Example: ARCDIST 1 75.00 2 80.00 1
+
+SAVE (Save Calculated Intersection Point)
+    Syntax:  SAVE [point number] (description)
+    Purpose: Stores the most recently calculated intersection coordinate.
+    Example: SAVE 150 "PROP CORNER CALC"
+
+================================================================================
+8. BASELINE COMMANDS (STATION & OFFSET)
+================================================================================
+Baseline commands allow users to establish an arbitrary baseline between two
+points, and query or define points by Station and Offset.
+
+BL IS (Baseline Define)
+    Syntax:  BL IS [point 1] [point 2] [starting station]
+    Purpose: Establishes active baseline between Point 1 and Point 2.
+    Example: BL IS 1 2 1000.00 (Baseline starts at Pt 1 with Sta 10+00.00)
+
+BL PT (Baseline Point by Station & Offset)
+    Syntax:  BL PT (point) [station] (offset) (elevation) (description)
+    Purpose: Creates a point at a given Station and Offset from the baseline.
+             Offset: positive = Right, negative = Left.
+    Example: BL PT 201 1050.00 25.00 42.50 "EDGE PAVEMENT"
+    Example: BL PT 202 1050.00 -25.00 42.50 "EDGE PAVEMENT"
+
+BL INV (Baseline Inverse Query)
+    Syntax:  BL INV [point]
+    Purpose: Reports the station, offset, and elevation of a point relative to
+             the active baseline.
+    Example: BL INV 300
+
+BL DIST (Baseline Distance Query)
+    Syntax:  BL DIST [station 1] [station 2]
+    Purpose: Calculates distance along baseline between two stations.
+    Example: BL DIST 1000.00 1450.00
+
+================================================================================
+9. CENTERLINE / ALIGNMENT COMMANDS
+================================================================================
+Similar to Baseline commands, Centerline commands relate observations directly 
+to design alignments and roadway centerlines.
+
+CL IS (Centerline Define)
+    Syntax:  CL IS [point 1] [point 2] [start station]
+    Purpose: Establishes a centerline reference course.
+    Example: CL IS 10 20 0.00
+
+CL PT (Centerline Point Create)
+    Syntax:  CL PT (point) [station] [offset] (description)
+    Purpose: Creates point relative to centerline (negative offset = Left).
+    Example: CL PT 301 250.00 -12.00 "CL LANE"
+
+CL INV (Centerline Inverse Query)
+    Syntax:  CL INV [point]
+    Purpose: Displays station, offset, and perpendicular distance of point to CL.
+    Example: CL INV 105
+
+CL ELEV (Centerline Elevation Setup)
+    Syntax:  CL ELEV [elevation at start] [grade %]
+    Purpose: Defines vertical grade along centerline.
+    Example: CL ELEV 100.00 2.50
+
+================================================================================
+10. SETUP & OBSERVATION COMMANDS (FIELD BOOK / .FBK FORMAT)
+================================================================================
+These commands are used in raw total station and field data collector files 
+imported into Civil 3D Survey Databases.
+
+UNIT (Define Measurement Units)
+    Syntax:  UNIT [FOOT | METER] [DEGREE | DMS | GRAD]
+    Example: UNIT FOOT DMS
+
+STN (Instrument Station Setup)
+    Syntax:  STN [point] [instrument height] (description)
+    Alias:   OCC [point] [instrument height]
+    Purpose: Sets the occupied station point and height of instrument (HI).
+    Example: STN 1 5.25 "TRAV PT 1"
+
+BS (Backsight Observation)
+    Syntax:  BS [backsight point] (azimuth/bearing) (backsight circle reading)
+    Alias:   BK [backsight point]
+    Purpose: Establishes instrument reference orientation / backsight.
+    Example: BS 2 0.0000 0.0000
+
+FS (Foresight Traverse Observation)
+    Syntax:  FS [point] [horiz angle] [slope dist] [zenith/vert angle] [rod height] (desc)
+    Purpose: Observes a control traverse point (used in network adjustment).
+    Example: FS 3 85.3025 245.88 89.4510 5.00 "TRAV PT 3"
+
+SS (Sideshot Topographic Observation)
+    Syntax:  SS [point] [horiz angle] [slope dist] [zenith/vert angle] [rod height] (desc)
+    Purpose: Observes a side point / topographic detail (not in network adjustment).
+    Example: SS 101 125.1040 45.20 90.1200 5.00 "TREE OAK 18IN"
+    Example: SS 102 128.4520 85.60 91.0500 5.00 "EP B"
+
+PRISM (Prism / Target Height)
+    Syntax:  PRISM [rod height]
+    Alias:   TH [rod height]
+    Purpose: Sets global default target height until updated.
+    Example: PRISM 5.50
+
+ATMOS (Atmospheric Correction)
+    Syntax:  ATMOS [ppm | temperature pressure]
+    Purpose: Sets EDM ppm atmospheric correction factor.
+    Example: ATMOS 68 29.92
+
+COLL (Collimation Correction)
+    Syntax:  COLL [ON | OFF]
+    Purpose: Enables instrument index and collimation corrections.
+    Example: COLL ON
+
+SCALE (Grid to Ground Scale Factor)
+    Syntax:  SCALE [factor]
+    Purpose: Applies grid-to-ground scale factor to observed distances.
+    Example: SCALE 0.99994520
+
+CRV (Curve Definition in Observations)
+    Syntax:  CRV [RADIUS | DELTA | LENGTH | CHORD] [value]
+    Purpose: Inserts curve parameters into traverse observation sequences.
+    Example: CRV RADIUS 150.00
+
+FILE DIRECTIVES & COMMENT SYNTAX:
+    START_BATCH / END_BATCH
+        Encloses batch sequences within .FBK and command scripts.
+    COMMENT TAGS:
+        // [text]       Standard single-line comment
+        ! [text]        Field Book exclamation comment line
+        C [text]        Field Book letter-C comment line (legacy TDS / SDR format)
+
+================================================================================
+10B. TRAVERSE & NETWORK ADJUSTMENT COMMANDS
+================================================================================
+Traverse adjustment commands define, close, balance, and compute statistical 
+closures directly within the Survey Command Window:
+
+TRV OPEN (Open Traverse Definition)
+    Syntax:  TRV OPEN [traverse name]
+    Purpose: Begins the interactive definition of a named traverse loop or route.
+    Example: TRV OPEN BOUNDARY_TRAV_1
+
+TRV STN (Add Traverse Station)
+    Syntax:  TRV STN [point number]
+    Purpose: Designates occupied traverse station point.
+    Example: TRV STN 101
+
+TRV BS (Traverse Initial Backsight)
+    Syntax:  TRV BS [point number]
+    Purpose: Designates reference backsight station.
+    Example: TRV BS 100
+
+TRV FS (Traverse Foresight Station)
+    Syntax:  TRV FS [point number]
+    Purpose: Records foresight station along traverse run.
+    Example: TRV FS 102
+
+TRV CLOSE (Close Traverse Loop)
+    Syntax:  TRV CLOSE [closure point number]
+    Purpose: Closes loop on initial station or closing control monument.
+    Example: TRV CLOSE 100
+
+TRV COMP (Compute Closure & Precision)
+    Syntax:  TRV COMP [traverse name]
+    Purpose: Displays raw linear misclosure, angular misclosure, perimeter, 
+             and precision ratio (e.g. 1:25,480).
+    Example: TRV COMP BOUNDARY_TRAV_1
+
+ADJUSTMENT METHODS:
+    COMPASS [traverse name]
+        Balances traverse using the Compass Rule (Bowditch method) — distributes
+        latitude and departure errors proportionally to course lengths.
+        Standard for boundary surveys under Florida Rule 5J-17.
+    TRANSIT [traverse name]
+        Balances traverse using the Transit Rule (assumes higher precision in 
+        angles than distances).
+    CRANDALL [traverse name]
+        Balances distances while preserving angular observations.
+    LEAST SQUARES
+        Executes a 2D/3D Least Squares adjustment across the entire network.
+
+================================================================================
+11. LINEWORK CODE SET SYNTAX (FIELD-TO-FINISH CODES)
+================================================================================
+When points are imported via point files (PNEZD) or field books, field codes
+in the description column trigger automated linework creation.
+
+Special linework codes follow the raw description (separated by a delimiter):
+
+LINE FEATURE CODES:
+    B        Begin figure (e.g., "EP B" starts a new EP figure)
+    E        End figure (e.g., "EP E" ends the current EP figure)
+    C        Continue figure across interruptions (e.g., "EP C")
+    CLO/CLS  Close figure back to start vertex (e.g., "BLDG CLO", "BND CLS")
+
+CURVE CODES:
+    PC / BC  Begin curve / Point of Curvature (e.g., "CURB BC")
+    PT / EC  End curve / Point of Tangency (e.g., "CURB EC")
+    OC       On-curve / 3-point curve pass-through (e.g., "CURB OC")
+    CIR      Circle by radius (e.g., "TREE CIR 3.5")
+    RAD      Curve Radius specification
+
+OFFSET CODES:
+    H [dist] Horizontal offset (creates parallel linework left/right)
+             Example: "EP B H-1.5" (Begins EP and parallel line 1.5 ft left)
+    V [dist] Vertical offset
+             Example: "EP B V-0.5" (Begins EP with 0.5 ft elevation drop)
+
+LINEWORK EXTENSION & RECTANGLE CODES:
+    EXT      Extend segment distance
+    RECT     Rectangle by 3 points or width
+             Example: "PAD RECT 20.0"
+
+================================================================================
+11B. FDOT STATE KIT SURVEY LINEWORK STANDARDS
+================================================================================
+The official FDOT Civil 3D State Kit configures standardized Survey Database
+linework code sets and Figure Prefix Databases:
+
+FDOT DEFAULT CODE SET:
+    Feature / Code Delimiter:   <Space>
+    Field Code Escape:          "/"  (or "X" in certain crew data-collector profiles)
+    Begin Figure:               B
+    Continue Figure:            C
+    End Figure:                 E
+    Close Figure:               CLS  (or CLO)
+    Begin Curve:                BC   (or PC)
+    End Curve:                  EC   (or PT)
+    Circle:                     CIR
+    Rectangle:                  RECT
+
+FDOT SURVEY FIGURE PREFIX MAPPINGS (FLORIDA CADD MANUAL):
+    Prefix        Discipline   Default Layer       Breakline?   Lot Line?
+    ---------------------------------------------------------------------
+    BND*          SURV         SURV_BND_EX         Yes          Yes
+    RW*           RW           RW_LINE_EX          Yes          Yes
+    EOP*          ROAD         ROAD_EOP_EX         Yes          No
+    CURB*         ROAD         ROAD_CURB_EX        Yes          No
+    SWK*          ROAD         ROAD_SWK_EX         Yes          No
+    CL*           ROAD         ROAD_ALIGN_EX       No           No
+    DRAIN_DITCH*  DRAIN        DRAIN_SWALE_EX      Yes          No
+    UTIL_WATER*   UTIL         UTIL_WATER_EX       No           No
+
+FLORIDA ADMINISTRATIVE CODE RULE 5J-17 COMPLIANCE:
+    - Minimum closure precision: 1:10,000 for boundary and commercial parcels.
+    - All curve elements must be identified with PC, PT, PRC, or PCC nodes.
+    - True physical WGS84 / NAD83 State Plane coordinates (no artificial fudging).
+
+================================================================================
+12. CIVIL 3D SURVEY TRANSPARENT COMMANDS
+================================================================================
+Transparent commands can be run while inside ANY AutoCAD or Civil 3D drawing 
+command (e.g., `LINE`, `PLINE`, `3DPOLY`, `CIRCLE`, `ALIGNMENT`).
+Prefix with an apostrophe (').
+
+Command     Name                   Function / Input Prompts
+--------------------------------------------------------------------------------
+'BD         Bearing Distance       Prompts for Quadrant (1-4), Bearing, Distance
+'AD         Angle Distance         Prompts for Reference line, Angle, Distance
+'ZD         Zenith Distance        Prompts for Direction, Slope Distance, Zenith
+'DD         Deflection Distance    Prompts for Backsight line, Deflection, Dist
+'NE         Northing Easting       Prompts for Northing, Easting
+'GN         Grid Northing          Prompts for Grid Northing, Grid Easting
+'LL         Latitude Longitude     Prompts for Lat/Long in Geographic coords
+'SO         Station Offset         Prompts for Alignment, Station, Offset
+'PN         Point Number           Prompts for Point Number to snap to
+'PA         Point Name             Prompts for Survey Point Name
+'PO         Point Object           Prompts to click a Point entity
+'SS         Side Shot              Prompts for Station, Backsight, Angle, Dist
+'DE         Delta Elevation        Prompts for reference point, Delta Z
+
+================================================================================
+13. SAMPLE SCRIPTS & WORKFLOW EXAMPLES
+================================================================================
+
+--- EXAMPLE A: SURVEY COMMAND WINDOW BATCH SCRIPT ---
+// Establish Station 1 and Backsight 2
+NE 1 50000.00 50000.00 "CONTROL 1"
+NE 2 50500.00 50000.00 "CONTROL 2"
+STN 1 5.15
+BS 2
+
+// Start Boundary Figure and traverse courses
+FIG BEGIN BOUNDARY
+FIG PT 1
+BD 3 1 90.0000 350.00 "PROP CORNER"
+FIG PT 3
+BD 4 2 0.0000 200.00 "PROP CORNER"
+FIG PT 4
+BD 5 3 90.0000 350.00 "PROP CORNER"
+FIG PT 5
+FIG CLOSE
+FIG END
+
+// Compute Inverse and Area
+INV 1 3
+AREA 1 3 4 5 1
+
+--- EXAMPLE B: FIELD BOOK (.FBK) RAW DATA FILE ---
+START_BATCH
+UNIT FOOT DMS
+STN 1 5.20 "TRAV 1"
+BS 2 0.0000 0.0000
+FS 3 88.4215 312.45 89.1520 5.00 "TRAV 2"
+SS 100 45.1020 85.30 90.0000 5.00 "EP B"
+SS 101 45.3010 120.40 90.1500 5.00 "EP"
+SS 102 48.2040 180.20 89.4500 5.00 "EP BC"
+SS 103 52.1000 220.50 89.3000 5.00 "EP OC"
+SS 104 55.4020 260.80 89.1000 5.00 "EP EC"
+SS 105 58.0010 310.00 89.0000 5.00 "EP E"
+END_BATCH
+
+--- EXAMPLE C: FDOT ELECTRONIC FIELD BOOK (EFB) VS AUTODESK .FBK COMPARISON ---
+
+1. Architectural & Data Model Differences:
+   - Autodesk Civil 3D Field Book (.FBK):
+     * Primarily a raw polar instrument observation stream (STN, BS, FS, SS, BD).
+     * Linear features are triggered either via Description Keys with linework code sets
+       (e.g., 'B', 'E', 'BC', 'OC', 'EC') or explicit FIG batch blocks (FIG BEGIN, FIG PT).
+     * Focuses on instrument station setups, rod heights, horizontal/vertical angles, and distances.
+   - FDOT Electronic Field Book (EFB / EFBP):
+     * Based on FDOT EFB User's Handbook & EFBP Processing Handbook standards.
+     * Pure coordinate-point database + planimetric chain lists.
+     * 9-column point definition: NAME, Northing, Easting, Elev, Geom (P/C), Attr, Zone, RefName, Feature.
+     * Linework is driven by chain-list scripts that specify figure names, feature codes, and point sequences
+       with range expansions (e.g. 'A1-4'), reverse sequences ('-TAN'), and break runs (',,').
+
+2. Point Geometry & Curve Handling (P vs C):
+   - In Autodesk FBK: Curves are signaled using special linework codes ('BC', 'OC', 'EC' or radius commands).
+   - In FDOT EFB: Point rows carry explicit GEOM flags:
+     * P (Point): Straight tangent vertex.
+     * C (Curve): Circular arc or spline vertex depending on context:
+       - Single isolated C between P points: Solves a unique circular arc tangent to both exterior lines.
+       - Exactly 3 C points: Forms a 3-point circular arc (PC, POC, PT).
+       - 4 or more consecutive C points: Evaluated as a smooth continuous spline (Catmull-Rom interpolation).
+
+3. FDOT EFB Sample Format:
+   # Point Records (NAME,N,E,Z,GEOM,ATTR,ZONE,REFNAME,FEATURE)
+   P1, 1000.00, 1000.00, 10.0, P, , , , TOPO-EP
+   P2, 1050.00, 1050.00, 10.2, C, , , , TOPO-EP
+   P3, 1100.00, 1050.00, 10.4, P, , , , TOPO-EP
+   # Chain List Definition
+   CHAIN, EP_RUN, TOPO-EP, P1, P2, P3
+
+4. Cross-Platform Bridge:
+   - The FDOT Civil 3D suite provides a bi-directional compilation engine between EFB chain models
+     and Autodesk Survey Command batch scripts (.FBK).
+   - An EFB chain compiles directly to standard Civil 3D Survey Figures:
+     FIG BEGIN <CHAIN_NAME>
+     FIG LAYER <CORRESPONDING_FDOT_LAYER>
+     FIG PT <P1>
+     FIG PT <P2>
+     FIG PT <P3>
+     FIG END
+
+================================================================================
+END OF FILE - AUTODESK CIVIL 3D SURVEY COMMAND LANGUAGE REFERENCE
+================================================================================
+
